@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glucose Monitor — Αντώνης</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:        #080c14;
+  --layer1:    rgba(255,255,255,0.04);
+  --layer2:    rgba(255,255,255,0.07);
+  --layer3:    rgba(255,255,255,0.10);
+  --glass-border: rgba(255,255,255,0.09);
+  --glass-border-hi: rgba(255,255,255,0.16);
+
+  --teal:      #2dd4bf;
+  --teal-dim:  rgba(45,212,191,0.18);
+  --teal-glow: rgba(45,212,191,0.35);
+  --green:     #4ade80;
+  --amber:     #fbbf24;
+  --red:       #f87171;
+  --red-urg:   #ef4444;
+
+  --text:      #f1f5f9;
+  --text-2:    #94a3b8;
+  --text-3:    #475569;
+
+  --display:   'Syne', sans-serif;
+  --mono:      'DM Mono', monospace;
+  --r:         14px;
+  --r-sm:      8px;
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+
+/* ── LAYERED BG ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(45,212,191,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 110%,  rgba(99,102,241,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%,   rgba(15,23,42,0.4)   0%, transparent 100%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+}
+
+/* ── LAYOUT ── */
+#app{
+  position:relative;z-index:1;
+  width:100vw;height:100vh;
+  display:grid;
+  grid-template-rows:56px 1fr 112px;
+  padding:14px 18px;
+  gap:12px;
+}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--glass-border);
+  padding-bottom:12px;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--teal-dim);
+  border:1px solid var(--teal-glow);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.logo-mark::before{
+  content:'';width:10px;height:10px;border-radius:50%;
+  background:var(--teal);
+  box-shadow:0 0 12px var(--teal),0 0 24px var(--teal-glow);
+  animation:beat 2.4s ease-in-out infinite;
+}
+@keyframes beat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.65);opacity:.5}}
+.logo-title{font-family:var(--display);font-size:13px;font-weight:700;
+  color:var(--text);letter-spacing:.12em;text-transform:uppercase}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text-2);letter-spacing:.2em;margin-top:1px}
+.hdr-center{display:flex;align-items:center;gap:6px}
+.hdr-pill{
+  padding:4px 14px;border-radius:100px;
+  background:var(--layer1);border:1px solid var(--glass-border);
+  font-family:var(--mono);font-size:11px;color:var(--text-2);letter-spacing:.08em;
+}
+.hdr-r{text-align:right}
+.pname{font-family:var(--display);font-size:17px;font-weight:800;color:var(--teal);letter-spacing:.06em}
+.clock{font-family:var(--mono);font-size:12px;color:var(--text-2);margin-top:2px;letter-spacing:.1em}
+
+/* ── GLASS CARD BASE ── */
+.card{
+  background:var(--layer1);
+  border:1px solid var(--glass-border);
+  border-radius:var(--r);
+  backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r);pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 50%);
+}
+
+/* ── MIDDLE ── */
+.mid{display:grid;grid-template-columns:216px 1fr 228px;gap:12px;min-height:0}
+
+/* VALUE CARD */
+.vcard{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:18px 14px;
+  gap:0;
+}
+/* teal top accent line */
+.vcard::after{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);
+  border-radius:0 0 4px 4px;
+}
+.lbl{
+  font-family:var(--display);font-size:10px;font-weight:600;
+  letter-spacing:.2em;color:var(--text-2);
+  text-transform:uppercase;margin-bottom:10px;
+}
+.gval{
+  font-family:var(--mono);font-size:clamp(56px,5.8vw,86px);
+  font-weight:500;line-height:1;transition:color .5s;
+  letter-spacing:-.02em;
+}
+.gunit{font-family:var(--mono);font-size:11px;color:var(--text-3);letter-spacing:.15em;margin-top:6px}
+.arrow{
+  font-size:clamp(22px,2.8vw,34px);margin-top:10px;
+  transition:color .5s;line-height:1;
+}
+.delta{
+  font-family:var(--mono);font-size:clamp(18px,2vw,26px);font-weight:500;
+  margin-top:6px;letter-spacing:.04em;transition:color .4s;
+}
+.badge{
+  margin-top:10px;padding:5px 18px;border-radius:100px;
+  font-family:var(--display);font-size:10px;letter-spacing:.18em;font-weight:700;
+  text-transform:uppercase;
+}
+.ok {background:rgba(74,222,128,.1); color:var(--green);border:1px solid rgba(74,222,128,.25)}
+.hi {background:rgba(251,191,36,.1); color:var(--amber);border:1px solid rgba(251,191,36,.25)}
+.lo {background:rgba(248,113,113,.1);color:var(--red);  border:1px solid rgba(248,113,113,.25)}
+.urg{background:rgba(239,68,68,.18); color:var(--red-urg);border:1px solid rgba(239,68,68,.4);animation:pulse-b .9s infinite}
+@keyframes pulse-b{0%,100%{opacity:1}50%{opacity:.45}}
+.gage{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:6px;letter-spacing:.06em}
+.carb-ratio-wrap{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07)}
+.carb-calc-wrap{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07)}
+.carb-calc-lbl{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:6px}
+.carb-calc-row{display:flex;align-items:center;gap:10px}
+.carb-input{
+  width:72px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+  border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:16px;
+  outline:none;-moz-appearance:textfield;
+}
+.carb-input::-webkit-outer-spin-button,.carb-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.carb-input:focus{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-dim)}
+.carb-result{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--teal);letter-spacing:-.01em}
+.carb-ratio-lbl{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
+.carb-ratio-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--amber);letter-spacing:-.01em}
+
+/* COUNTDOWN */
+.countdown-wrap{
+  width:100%;margin-top:14px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.countdown-lbl{
+  font-family:var(--display);font-size:9px;font-weight:600;
+  letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+}
+.countdown-num{
+  font-family:var(--mono);font-size:clamp(28px,3.2vw,42px);font-weight:500;
+  color:var(--teal);line-height:1;transition:color .4s;letter-spacing:.04em;
+}
+.cbar-track{
+  width:100%;height:3px;background:rgba(255,255,255,.06);
+  border-radius:100px;overflow:hidden;
+}
+.cbar-fill{
+  height:100%;background:var(--teal);
+  border-radius:100px;
+  transition:width 1s linear,background .5s;
+  box-shadow:0 0 8px var(--teal);
+}
+
+/* CHART CARD */
+.ccrd{padding:16px 18px;display:flex;flex-direction:column}
+.chdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0}
+.cttl{font-family:var(--display);font-size:12px;font-weight:700;
+  letter-spacing:.12em;color:var(--text-2);text-transform:uppercase}
+.rbtns{display:flex;gap:4px}
+.rbtn{
+  background:transparent;border:1px solid var(--glass-border);
+  color:var(--text-3);font-family:var(--display);font-size:11px;font-weight:600;
+  padding:4px 11px;border-radius:100px;cursor:pointer;transition:all .18s;
+  letter-spacing:.06em;
+}
+.rbtn.on{background:var(--teal-dim);border-color:var(--teal-glow);color:var(--teal)}
+.rbtn:hover{border-color:var(--glass-border-hi);color:var(--text)}
+.cwrap{position:relative;flex:1;min-height:0;cursor:grab}
+.cwrap:active{cursor:grabbing}
+.cwrap canvas{display:none;position:absolute;inset:0;width:100%!important;height:100%!important}
+
+/* STATS PANEL */
+.spanel{display:flex;flex-direction:column;gap:8px;padding:12px}
+.scard{
+  background:var(--layer2);border:1px solid var(--glass-border);
+  border-radius:var(--r-sm);
+  padding:11px 14px;flex:1;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+}
+.slbl{
+  font-family:var(--display);font-size:11px;font-weight:600;
+  letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:5px;
+}
+.sval{font-family:var(--mono);font-size:clamp(22px,2.5vw,32px);font-weight:500;line-height:1;letter-spacing:-.01em}
+.ssub{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:4px;letter-spacing:.04em}
+
+/* TIR gauge */
+.tirwrap{position:relative;width:116px;height:116px;margin:4px auto 8px}
+.tirsvg{width:116px;height:116px}
+.tirnum{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:var(--mono);font-size:30px;font-weight:500;
+  text-align:center;line-height:1;
+}
+.tirnum small{
+  font-size:11px;display:block;color:var(--text-3);
+  font-family:var(--display);font-weight:600;letter-spacing:.12em;margin-top:3px;
+}
+.tirbkd{display:flex;justify-content:space-between;width:100%;
+  font-family:var(--mono);font-size:11px;margin-top:6px;}
+.t-lo{color:var(--red)}.t-ok{color:var(--green)}.t-hi{color:var(--amber)}
+
+/* ── BOTTOM ── */
+.bot{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.bcard{
+  background:var(--layer1);border:1px solid var(--glass-border);
+  border-radius:var(--r-sm);
+  padding:10px 14px;display:flex;flex-direction:column;justify-content:center;
+}
+.blbl{
+  font-family:var(--display);font-size:11px;font-weight:600;
+  letter-spacing:.14em;color:var(--text-3);
+  text-transform:uppercase;margin-bottom:5px;
+}
+.bval{font-family:var(--mono);font-size:clamp(24px,2.8vw,36px);font-weight:500;line-height:1;letter-spacing:-.02em}
+.bsub{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:4px;letter-spacing:.04em}
+.tbmini{display:flex;height:3px;border-radius:100px;overflow:hidden;gap:1px;margin-top:8px}
+.tblo{background:var(--red)}.tbok{background:var(--green)}.tbhi{background:var(--amber)}
+
+.fcard{
+  background:transparent;border:1px solid var(--glass-border);
+  border-radius:var(--r-sm);
+  padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;
+}
+.flbl{font-family:var(--display);font-size:9px;font-weight:600;
+  letter-spacing:.18em;color:var(--text-3);text-transform:uppercase}
+.ftime{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:4px;letter-spacing:.06em}
+.rfbtn{
+  background:var(--teal-dim);border:1px solid var(--teal-glow);
+  color:var(--teal);font-family:var(--display);font-size:10px;font-weight:700;
+  padding:6px 14px;border-radius:100px;cursor:pointer;
+  letter-spacing:.12em;text-transform:uppercase;
+  transition:all .2s;align-self:flex-start;margin-top:8px;
+}
+.rfbtn:hover{background:rgba(45,212,191,.28);box-shadow:0 0 16px var(--teal-glow)}
+
+/* loader */
+.ld{display:flex;align-items:center;justify-content:center;gap:6px;height:100%}
+.ld span{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--teal);animation:bl 1.3s ease-in-out infinite;
+}
+.ld span:nth-child(2){animation-delay:.18s}.ld span:nth-child(3){animation-delay:.36s}
+@keyframes bl{0%,80%,100%{opacity:.12;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+
+/* horizontal rule as teal top-line on cards (optional accent) */
+.accent-top::after{
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal-glow),transparent);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <div>
+        <div class="logo-title">Glucose Monitor</div>
+        <div class="logo-sub">REAL-TIME · 5MIN</div>
+      </div>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-pill" id="hdr-status">— φόρτωση —</div>
+    </div>
+    <div class="hdr-r">
+      <div class="pname">Αντώνης</div>
+      <div class="clock" id="clk">--:--:--</div>
+    </div>
+  </header>
+
+  <div class="mid">
+
+    <!-- Current value -->
+    <div class="card vcard accent-top">
+      <div class="lbl">Τρέχουσα τιμή</div>
+      <div class="gval" id="gval" style="color:var(--teal)">---</div>
+      <div class="gunit">mg / dL</div>
+      <div class="arrow" id="garr" style="color:var(--teal)">⟶</div>
+      <div class="delta" id="gdlt">Δ ---</div>
+      <div class="badge ok" id="gbdg">Φόρτωση</div>
+      <div class="gage" id="gage">---</div>
+      <div class="carb-ratio-wrap">
+        <div class="carb-ratio-lbl">Αναλογία υδατανθράκων</div>
+        <div class="carb-ratio-val" id="carb-ratio">--- g / U</div>
+      </div>
+      <div class="carb-calc-wrap">
+        <div class="carb-calc-lbl">Υπολογισμός δόσης</div>
+        <div class="carb-calc-row">
+          <input class="carb-input" id="carb-input" type="number" min="0" max="300" placeholder="g" />
+          <div class="carb-result" id="carb-result">— U</div>
+        </div>
+      </div>
+      <div class="countdown-wrap">
+        <div class="countdown-lbl">Επόμενη μέτρηση</div>
+        <div class="countdown-num" id="cdown">5:00</div>
+        <div class="cbar-track"><div class="cbar-fill" id="cbar" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card ccrd">
+      <div class="chdr">
+        <div class="cttl">Ιστορικό γλυκόζης</div>
+        <div class="rbtns">
+          <button class="rbtn" onclick="setRange(1,this)">1H</button>
+          <button class="rbtn" onclick="setRange(3,this)">3H</button>
+          <button class="rbtn on" onclick="setRange(6,this)">6H</button>
+          <button class="rbtn" onclick="setRange(12,this)">12H</button>
+          <button class="rbtn" onclick="setRange(24,this)">24H</button>
+        </div>
+      </div>
+      <div class="cwrap" id="cwrap">
+        <div class="ld" id="cld"><span></span><span></span><span></span></div>
+        <canvas id="mc" role="img" aria-label="Glucose history chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Stats panel -->
+    <div class="card spanel accent-top">
+      <div class="scard">
+        <div class="slbl">Time in Range · 24h</div>
+        <div class="tirwrap">
+          <svg class="tirsvg" viewBox="0 0 116 116">
+            <circle cx="58" cy="58" r="46" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="10"/>
+            <circle id="tarc" cx="58" cy="58" r="46" fill="none" stroke-width="10"
+              stroke-dasharray="289" stroke-dashoffset="289"
+              stroke-linecap="round" transform="rotate(-90 58 58)"
+              style="transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1),stroke .5s"/>
+          </svg>
+          <div class="tirnum"><span id="tirn">--%</span><small>IN RANGE</small></div>
+        </div>
+        <div class="tirbkd">
+          <span class="t-lo" id="tlo">↓ --%</span>
+          <span class="t-ok" id="tok">✓ --%</span>
+          <span class="t-hi" id="thi">↑ --%</span>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="slbl">Εκτιμ. HbA1c</div>
+        <div class="sval" id="a1c" style="color:var(--teal)">--%</div>
+        <div class="ssub">από 24h μέσο όρο</div>
+      </div>
+      <div class="scard">
+        <div class="slbl">Τυπική απόκλιση</div>
+        <div class="sval" id="sdv" style="color:var(--amber)">---</div>
+        <div class="ssub">mg/dL variability</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bot">
+    <div class="bcard">
+      <div class="blbl">Μέσος όρος · 24h</div>
+      <div class="bval" id="bavg" style="color:var(--teal)">---</div>
+      <div class="bsub">mg/dL</div>
+    </div>
+    <div class="bcard">
+      <div class="blbl">Τελευταίο γεύμα</div>
+      <div class="bval" id="last-meal-ins" style="color:var(--amber)">---</div>
+      <div class="bsub" id="last-meal-time">---</div>
+    </div>
+    <div class="bcard">
+      <div class="blbl">Ενεργή ινσουλίνη · IOB</div>
+      <div class="bval" id="iob" style="color:var(--green)">---</div>
+      <div class="bsub">U υπολογισμός</div>
+    </div>
+    <div class="bcard" id="pod-card">
+      <div class="blbl">Omnipod · αλλαγή σε</div>
+      <div class="bval" id="pod-remain" style="color:var(--teal)">---</div>
+      <div class="bsub" id="pod-sub">---</div>
+    </div>
+    <div class="bcard" id="sensor-card">
+      <div class="blbl">Αισθητήρας · αλλαγή σε</div>
+      <div class="bval" id="sensor-remain" style="color:var(--teal)">---</div>
+      <div class="bsub" id="sensor-sub">---</div>
+    </div>
+    <div class="fcard">
+      <div>
+        <div class="flbl">Τελευταία ενημέρωση</div>
+        <div class="ftime" id="lupd">---</div>
+      </div>
+      <button class="rfbtn" onclick="loadData()">↻ Ανανέωση</button>
+    </div>
+  </div>
+
+</div>
+<script>
+const BASE='https://nightscout-antonis-7b338979f9b1.herokuapp.com';
+const LOW=70,HIGH=180,UL=55,UH=250,CGM=300;
+let ents=[],treats=[],mc=null,hrs=6,lastTs=null,cdTimer=null;
+window._cgmInterval=330;
+
+const gc=v=>v<=UL||v>=UH?'#f87171':v<LOW||v>HIGH?'#fbbf24':'#4ade80';
+const arw=d=>({DoubleUp:'⬆⬆',SingleUp:'⬆',FortyFiveUp:'↗',Flat:'→',FortyFiveDown:'↘',SingleDown:'⬇',DoubleDown:'⬇⬇'}[d])||'→';
+const st=v=>v>=UH?{t:'Πολύ υψηλό',c:'urg'}:v>HIGH?{t:'Υψηλό',c:'hi'}:v<=UL?{t:'Υπογλυκαιμία!',c:'urg'}:v<LOW?{t:'Χαμηλό',c:'lo'}:{t:'Κανονικό',c:'ok'};
+const pad=n=>String(Math.max(0,n)).padStart(2,'0');
+
+/* clock */
+/* carb dose calculator */
+(function(){
+  const inp=document.getElementById('carb-input');
+  const res=document.getElementById('carb-result');
+  let ratio=0;
+  /* expose setter so profile fetch can update ratio */
+  window._setCarbRatio=function(r){
+    ratio=r;
+    const v=parseFloat(inp.value);
+    if(v>0&&ratio>0) res.textContent=(v/ratio).toFixed(2)+' U';
+  };
+  inp.addEventListener('input',()=>{
+    const v=parseFloat(inp.value);
+    if(!v||v<=0){res.textContent='— U';return;}
+    if(!ratio){res.textContent='— U';return;}
+    res.textContent=(v/ratio).toFixed(2)+' U';
+  });
+})();
+
+setInterval(()=>document.getElementById('clk').textContent=new Date().toLocaleTimeString('el-GR'),1000);
+document.getElementById('clk').textContent=new Date().toLocaleTimeString('el-GR');
+
+/* countdown */
+function startCountdown(){
+  if(cdTimer)clearInterval(cdTimer);
+  if(!lastTs)return;
+  const interval=window._cgmInterval||CGM;
+  let fired=false;
+  function tick(){
+    const elapsed=Math.floor((Date.now()-lastTs)/1000);
+    const rem=Math.max(0,interval-elapsed);
+    const el=document.getElementById('cdown'),bar=document.getElementById('cbar');
+    bar.style.width=(rem/interval*100)+'%';
+    if(rem<=30){el.style.color='#f87171';bar.style.background='#f87171';bar.style.boxShadow='0 0 8px #f87171'}
+    else if(rem<=60){el.style.color='#fbbf24';bar.style.background='#fbbf24';bar.style.boxShadow='0 0 8px #fbbf24'}
+    else{el.style.color='#2dd4bf';bar.style.background='#2dd4bf';bar.style.boxShadow='0 0 8px #2dd4bf'}
+    if(elapsed>=interval){
+      const over=elapsed-interval;
+      const om=Math.floor(over/60),os=over%60;
+      el.textContent='-'+om+':'+pad(os);
+      el.style.color='#f87171';bar.style.background='#f87171';bar.style.boxShadow='0 0 8px #f87171';
+      bar.style.width='0%';
+      if(!fired){fired=true;loadData();}
+    }else{
+      el.textContent=Math.floor(rem/60)+':'+pad(rem%60);
+    }
+  }
+  tick();cdTimer=setInterval(tick,1000);
+}
+
+/* range */
+/* pan state */
+let panOffsetMs=0;
+let _panAttached=false;
+
+function setRange(h,btn){
+  hrs=h;document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  panOffsetMs=0;
+  renderChart();
+}
+
+function attachPanOnce(canvas){
+  if(_panAttached)return;
+  _panAttached=true;
+  let dragStartX=null,dragStartOffset=null,dragging=false;
+
+  canvas.addEventListener('mousedown',e=>{
+    if(hrs>12)return;
+    dragging=true;dragStartX=e.clientX;dragStartOffset=panOffsetMs;
+    canvas.style.cursor='grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const canvasW=canvas.offsetWidth||800;
+    const msPerPx=hrs*3600000/canvasW;
+    const dx=e.clientX-dragStartX;
+    const maxOffset=ents.length?Math.max(0,Date.now()-ents[ents.length-1].date-hrs*3600000):0;
+    panOffsetMs=Math.max(0,Math.min(maxOffset,dragStartOffset-dx*msPerPx));
+    updateChartData();
+  });
+  window.addEventListener('mouseup',()=>{
+    if(dragging){dragging=false;canvas.style.cursor='grab';}
+  });
+}
+
+/* update chart data in-place without destroy/rebuild */
+function updateChartData(){
+  if(!mc)return;
+  const now=Date.now();
+  const windowEnd=now-panOffsetMs;
+  const cut=windowEnd-hrs*3600000;
+  const d=ents.filter(e=>e.date>=cut&&e.date<=windowEnd).sort((a,b)=>a.date-b.date);
+  if(!d.length)return;
+  const lbs=d.map(e=>{const x=new Date(e.date);return x.getHours()+':'+String(x.getMinutes()).padStart(2,'0')});
+  const vs=d.map(e=>e.sgv);
+  currentVs=vs;
+  currentDates=d.map(e=>e.date);
+  currentTw=treats.filter(t=>(t.mills>=cut&&t.mills<=windowEnd)||(t.eventType==='Temporary Override'&&t.mills<cut&&t.mills+t.duration*60000>=cut));
+  mc.data.labels=lbs;
+  mc.data.datasets[0].data=vs;
+  mc.data.datasets[0].pointBackgroundColor=vs.map(gc);
+  mc.data.datasets[0].pointBorderColor='transparent';
+  mc.options.scales.y.min=Math.max(30,Math.min(...vs)-20);
+  mc.options.scales.y.max=Math.min(420,Math.max(...vs)+30);
+  mc.options.animation=false;
+  mc.update('none');
+  mc.options.animation={duration:400};
+}
+
+/* treatment config */
+const TREAT_CFG={
+  'Bolus':           {color:'#a78bfa',icon:'💉',label:'Bolus'},
+  'Correction Bolus':{color:'#f472b6',icon:'💉',label:'Διόρθωση'},
+  'SMB':             {color:'#f472b6',icon:'💉',label:'SMB'},
+  'Temp Basal':      {color:'#38bdf8',icon:'⏱',label:'Temp Basal'},
+  'Carb Correction': {color:'#fb923c',icon:'🍞',label:'Carbs'},
+  'Meal Bolus':      {color:'#a78bfa',icon:'🍽',label:'Γεύμα'},
+  'Snack Bolus':     {color:'#a78bfa',icon:'🍎',label:'Σνακ'},
+  'Note':            {color:'#94a3b8',icon:'📝',label:'Σημείωση'},
+};
+function getTreatCfg(t){
+  return TREAT_CFG[t]||{color:'#94a3b8',icon:'●',label:t||'—'};
+}
+
+/* chart */
+let currentTw=[];
+let currentDates=[];
+let currentVs=[];
+
+function renderChart(){
+  const now=Date.now();
+  const windowEnd=now-panOffsetMs;
+  const cut=windowEnd-hrs*3600000;
+  const d=ents.filter(e=>e.date>=cut&&e.date<=windowEnd).sort((a,b)=>a.date-b.date);
+  if(!d.length)return;
+  document.getElementById('cld').style.display='none';
+  const cv=document.getElementById('mc');cv.style.display='block';
+  const lbs=d.map(e=>{const x=new Date(e.date);return x.getHours()+':'+String(x.getMinutes()).padStart(2,'0')});
+  currentVs=d.map(e=>e.sgv);
+  currentDates=d.map(e=>e.date);
+  currentTw=treats.filter(t=>(t.mills>=cut&&t.mills<=windowEnd)||(t.eventType==='Temporary Override'&&t.mills<cut&&t.mills+t.duration*60000>=cut));
+
+  if(mc)mc.destroy();
+
+  const getGrad=(ctx)=>{
+    const g=ctx.createLinearGradient(0,0,0,ctx.canvas.offsetHeight);
+    g.addColorStop(0,'rgba(45,212,191,0.18)');
+    g.addColorStop(1,'rgba(45,212,191,0)');
+    return g;
+  };
+
+  /* custom tooltip state */
+  let activeTreat=null;
+
+  mc=new Chart(cv,{
+    type:'line',
+    data:{labels:lbs,datasets:[{
+      data:currentVs,
+      borderColor:'rgba(45,212,191,0.8)',
+      backgroundColor:(ctx)=>getGrad(ctx.chart.ctx),
+      pointBackgroundColor:currentVs.map(gc),
+      pointBorderColor:'transparent',
+      pointRadius:currentVs.length>80?0:3,
+      pointHoverRadius:5,
+      borderWidth:1.8,tension:0.4,fill:true
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:400},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(8,12,20,.92)',
+          borderColor:'rgba(45,212,191,.2)',borderWidth:1,
+          titleColor:'#94a3b8',bodyColor:'#2dd4bf',
+          padding:10,cornerRadius:8,
+          callbacks:{label:c=>`${c.raw} mg/dL`}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'rgba(148,163,184,.4)',font:{size:10,family:'DM Mono'},maxTicksLimit:8,maxRotation:0},
+           grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.07)'}},
+        y:{min:Math.max(30,Math.min(...currentVs)-20),max:Math.min(420,Math.max(...currentVs)+30),
+           ticks:{color:'rgba(148,163,184,.4)',font:{size:10,family:'DM Mono'}},
+           grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.07)'}}
+      },
+      onHover:(e,els,chart)=>{
+        /* check if hover near a treatment marker */
+        const ca=chart.chartArea;if(!ca)return;
+        const x=e.x,y=e.y;
+        activeTreat=null;
+        for(const t of currentTw){
+          if(!t._px)continue;
+          const dx=Math.abs(x-t._px),dy=Math.abs(y-t._py);
+          if(dx<14&&dy<14){activeTreat=t;break;}
+        }
+        chart.canvas.style.cursor=activeTreat?'pointer':'default';
+      }
+    },
+    plugins:[
+      /* temporary overrides (Loop presets) */
+      {id:'overrides',beforeDraw(ch){
+        const{ctx,chartArea:{left,right,top,bottom},scales:{x}}=ch;
+        if(!x||!currentDates.length)return;
+        const winStart=currentDates[0];
+        const winEnd=currentDates[currentDates.length-1];
+        const winMs=winEnd-winStart;
+        if(winMs<=0)return;
+        const overrides=currentTw.filter(t=>t.eventType==='Temporary Override'&&t.mills&&t.duration>0);
+        if(!overrides.length)return;
+        ctx.save();
+        const BAR_H=18;
+        const BAR_Y=top+4;
+        const COLORS=['rgba(251,191,36,0.18)','rgba(167,139,250,0.18)','rgba(56,189,248,0.18)','rgba(74,222,128,0.18)'];
+        const BORDER=['rgba(251,191,36,0.7)','rgba(167,139,250,0.7)','rgba(56,189,248,0.7)','rgba(74,222,128,0.7)'];
+        overrides.forEach((t,i)=>{
+          const col=i%COLORS.length;
+          const oStart=Math.max(t.mills,winStart);
+          const oEnd=Math.min(t.mills+t.duration*60000,winEnd);
+          if(oEnd<=oStart)return;
+          const px1=left+((oStart-winStart)/winMs)*(right-left);
+          const px2=left+((oEnd-winStart)/winMs)*(right-left);
+          const bw=Math.max(px2-px1,2);
+          /* background */
+          ctx.fillStyle=COLORS[col];
+          ctx.beginPath();
+          ctx.roundRect(px1,BAR_Y,bw,BAR_H,4);
+          ctx.fill();
+          /* border */
+          ctx.strokeStyle=BORDER[col];
+          ctx.lineWidth=1;
+          ctx.beginPath();
+          ctx.roundRect(px1,BAR_Y,bw,BAR_H,4);
+          ctx.stroke();
+          /* label */
+          const label=t.reason||'Override';
+          ctx.font='600 10px "Syne",sans-serif';
+          ctx.fillStyle=BORDER[col].replace('0.7','1');
+          ctx.textBaseline='middle';
+          ctx.textAlign='left';
+          const textX=px1+6;
+          const maxW=bw-12;
+          if(maxW>20){
+            /* clip text if too wide */
+            ctx.save();
+            ctx.beginPath();ctx.rect(px1+2,BAR_Y,bw-4,BAR_H);ctx.clip();
+            ctx.fillText(label,textX,BAR_Y+BAR_H/2);
+            ctx.restore();
+          }
+        });
+        ctx.restore();
+      }},
+      /* zone bands */
+      {id:'zones',beforeDraw(ch){
+        const{ctx,chartArea:{left,right,top,bottom},scales:{y}}=ch;
+        if(!y)return;
+        const py=v=>Math.max(top,Math.min(bottom,y.getPixelForValue(v)));
+        ctx.save();
+        const yH=py(HIGH),yL=py(LOW);
+        ctx.fillStyle='rgba(251,191,36,.03)';ctx.fillRect(left,top,right-left,Math.min(yH,bottom)-top);
+        ctx.fillStyle='rgba(74,222,128,.025)';ctx.fillRect(left,yH,right-left,yL-yH);
+        ctx.fillStyle='rgba(248,113,113,.05)';ctx.fillRect(left,yL,right-left,bottom-yL);
+        [[yH,'rgba(251,191,36,.3)'],[yL,'rgba(248,113,113,.4)']].forEach(([yp,col])=>{
+          if(yp<top||yp>bottom)return;
+          ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash([3,6]);
+          ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();
+        });
+        ctx.setLineDash([]);ctx.restore();
+      }},
+      /* treatment markers */
+      {id:'treatments',afterDraw(ch){
+        const{ctx,chartArea:{left,right,top,bottom},scales:{x,y}}=ch;
+        if(!x||!y||!currentTw.length)return;
+        ctx.save();
+
+        const getPos=(ts)=>{
+          let closestIdx=0,minD=Infinity;
+          for(let i=0;i<currentDates.length;i++){const dd=Math.abs(currentDates[i]-ts);if(dd<minD){minD=dd;closestIdx=i;}}
+          if(minD>600000)return null;
+          let px2,py2;
+          const lo=closestIdx,hi=closestIdx-1;
+          if(hi>=0&&hi<currentDates.length&&currentDates[hi]>=ts&&currentDates[lo]<=ts&&currentDates[hi]!==currentDates[lo]){
+            const frac=(ts-currentDates[lo])/(currentDates[hi]-currentDates[lo]);
+            py2=y.getPixelForValue(currentVs[lo]+(currentVs[hi]-currentVs[lo])*frac);
+            px2=x.getPixelForValue(lo)+(x.getPixelForValue(hi)-x.getPixelForValue(lo))*frac;
+          } else {
+            px2=x.getPixelForValue(closestIdx);
+            py2=y.getPixelForValue(currentVs[closestIdx]);
+          }
+          return{px:px2,py:py2};
+        };
+
+        const fmtDose=v=>v!=null?parseFloat(v.toFixed(2))+'':'';
+
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        ctx.font='600 10px "DM Mono",monospace';
+
+        for(const t of currentTw){
+          /* skip Temp Basal entirely */
+          if(t.eventType==='Temp Basal')continue;
+
+          const pos=getPos(t.mills);
+          if(!pos||pos.px<left-1||pos.px>right+1||pos.py<top-1||pos.py>bottom+1)continue;
+          const{px,py}=pos;
+
+          const et=t.eventType||'';
+          const isMeal = et==='Carb Correction'; /* carb entries = meals */
+          const isCorrection = et==='Correction Bolus'&&t.insulin>0;
+          const isCarb = false; /* no separate carb type needed */
+
+          if(isCorrection||isCarb){
+            /* red dot for corrections */
+            ctx.beginPath();
+            ctx.arc(px,py,11,0,Math.PI*2);
+            ctx.fillStyle='rgba(8,12,20,.6)';
+            ctx.fill();
+            ctx.strokeStyle='#f87171';
+            ctx.lineWidth=2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(px,py,5.5,0,Math.PI*2);
+            ctx.fillStyle='#fca5a5';
+            ctx.fill();
+            const dose=fmtDose(t.insulin)||fmtDose(t.carbs);
+            if(dose){
+              ctx.fillStyle='#fca5a5';
+              ctx.fillText(dose+'U',px,py-16);
+            }
+          } else if(isMeal){
+            /* dose above dot, purple dot, food icon BELOW */
+            const dose=fmtDose(t.insulin);
+            if(dose){
+              ctx.font='600 10px "DM Mono",monospace';
+              ctx.fillStyle='#c4b5fd';
+              ctx.fillText(dose+'U',px,py-14);
+            }
+            ctx.beginPath();
+            ctx.arc(px,py,11,0,Math.PI*2);
+            ctx.fillStyle='rgba(8,12,20,.6)';
+            ctx.fill();
+            ctx.strokeStyle='#a78bfa';
+            ctx.lineWidth=2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(px,py,5.5,0,Math.PI*2);
+            ctx.fillStyle='#c4b5fd';
+            ctx.fill();
+            ctx.font='12px serif';
+            ctx.textBaseline='top';
+            ctx.fillText('🍽',px,py+13);
+            ctx.textBaseline='bottom';
+            ctx.font='600 10px "DM Mono",monospace';
+          }
+
+          t._px=px;t._py=py;
+          t._isMeal=isMeal;t._isCorrection=isCorrection||isCarb;
+        }
+
+        /* hover tooltip */
+        if(activeTreat&&activeTreat._px!=null){
+          const t=activeTreat;
+          const ptx=t._px,pty=t._py;
+          const timeStr=new Date(t.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+          const typeLabel=t.eventType||'Δόση';
+          const insulinStr=t.insulin!=null?fmtDose(t.insulin)+' U':null;
+          const carbsStr=t.carbs!=null&&t.carbs>0?t.carbs+' g carbs':null;
+          const lines=[typeLabel,insulinStr,carbsStr,timeStr].filter(Boolean);
+          const accentColor=t._isMeal?'#a78bfa':'#f87171';
+
+          ctx.font='500 11px "DM Mono",monospace';
+          ctx.textAlign='left';ctx.textBaseline='alphabetic';
+          const pad2=10,lh=17;
+          const bw=Math.max(...lines.map(l=>ctx.measureText(l).width))+pad2*2;
+          const bh=lines.length*lh+pad2*2;
+          let bx=ptx+14,by=pty-bh/2;
+          if(bx+bw>right-4)bx=ptx-bw-14;
+          if(by<top+4)by=top+4;
+          if(by+bh>bottom-4)by=bottom-bh-4;
+          ctx.fillStyle='rgba(8,12,20,.95)';
+          ctx.strokeStyle=accentColor+'cc';ctx.lineWidth=1;
+          ctx.beginPath();ctx.roundRect(bx,by,bw,bh,6);ctx.fill();ctx.stroke();
+          lines.forEach((l,i)=>{
+            ctx.fillStyle=i===0?accentColor:i===lines.length-1?'#64748b':'#f1f5f9';
+            ctx.fillText(l,bx+pad2,by+pad2+lh*i+lh*.78);
+          });
+        }
+        ctx.restore();
+      }},
+      /* midnight line */
+      {id:'midnight',afterDraw(ch){
+        const{ctx,chartArea:{left,right,top,bottom},scales:{x}}=ch;
+        if(!x||!currentDates.length)return;
+        const winStart=currentDates[0];
+        const winEnd=currentDates[currentDates.length-1];
+        const winMs=winEnd-winStart;
+        if(winMs<=0)return;
+        ctx.save();
+        /* find all midnight timestamps within window */
+        const d0=new Date(winStart);
+        d0.setHours(0,0,0,0);
+        let midnight=d0.getTime();
+        while(midnight<=winStart)midnight+=86400000;
+        while(midnight<=winEnd){
+          /* pixel position by linear interpolation */
+          const frac=(midnight-winStart)/winMs;
+          const px=left+frac*(right-left);
+          if(px>=left&&px<=right){
+            ctx.strokeStyle='rgba(200,220,255,0.75)';
+            ctx.lineWidth=2;
+            ctx.setLineDash([5,5]);
+            ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();
+            ctx.setLineDash([]);
+            /* date label */
+            const dt=new Date(midnight);
+            const dd=String(dt.getDate()).padStart(2,'0');
+            const mm=String(dt.getMonth()+1).padStart(2,'0');
+            const yyyy=dt.getFullYear();
+            const label=dd+'/'+mm+'/'+yyyy;
+            ctx.font='700 11px "DM Mono",monospace';
+            ctx.fillStyle='rgba(200,220,255,0.9)';
+            ctx.textAlign='left';ctx.textBaseline='top';
+            const lw=ctx.measureText(label).width;
+            const lx=px+4;
+            const clampedLx=lx+lw>right-4?px-lw-4:lx;
+            ctx.fillText(label,clampedLx,top+4);
+          }
+          midnight+=86400000;
+        }
+        ctx.restore();
+      }}
+    ]
+  });
+  attachPanOnce(cv);
+}
+
+/* meal & IOB stats */
+function renderMealStats(loopIob){
+  if(!treats.length)return;
+
+  /* Meals = Carb Correction entries (carbs>0) */
+  const mealEntries=treats
+    .filter(t=>t.eventType==='Carb Correction'&&t.carbs>0)
+    .sort((a,b)=>b.mills-a.mills);
+  const lastMeal=mealEntries[0];
+
+  if(lastMeal){
+    /* find the closest manual bolus within ±10min of the carb entry */
+    const manualBolus=treats
+      .filter(t=>t.eventType==='Correction Bolus'&&t.automatic===false&&t.insulin>0)
+      .filter(t=>Math.abs(t.mills-lastMeal.mills)<600000)
+      .sort((a,b)=>Math.abs(a.mills-lastMeal.mills)-Math.abs(b.mills-lastMeal.mills));
+    const mealIns=manualBolus[0]?parseFloat(manualBolus[0].insulin.toFixed(2)):null;
+
+    const mealTime=new Date(lastMeal.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+    const agoMin=Math.round((Date.now()-lastMeal.mills)/60000);
+    const agoStr=agoMin<60?agoMin+'λ':Math.floor(agoMin/60)+'ω '+(agoMin%60)+'λ';
+
+    document.getElementById('last-meal-ins').textContent=mealIns!=null?mealIns+'U':'—';
+    document.getElementById('last-meal-time').textContent=mealIns!=null?'στις '+mealTime+' · '+agoStr+' πριν':'δεν βρέθηκε';
+  } else {
+    document.getElementById('last-meal-ins').textContent='—';
+    document.getElementById('last-meal-time').textContent='δεν βρέθηκε';
+  }
+
+  /* IOB — use Loop value from devicestatus if available, else linear decay fallback */
+  const iobEl=document.getElementById('iob');
+  let iobVal;
+  if(loopIob!=null&&isFinite(loopIob)){
+    iobVal=parseFloat(loopIob.toFixed(2));
+  } else {
+    const DIA=4*3600*1000;
+    const now=Date.now();
+    const bolusEntries=treats.filter(t=>
+      t.eventType==='Correction Bolus'&&t.insulin>0&&(now-t.mills)<DIA
+    );
+    let iob=0;
+    for(const t of bolusEntries)iob+=t.insulin*Math.max(0,1-(now-t.mills)/DIA);
+    iobVal=parseFloat(iob.toFixed(2));
+  }
+  if(iobVal===0){iobEl.textContent='0 U';iobEl.style.color='var(--text-3)';}
+  else{iobEl.textContent=iobVal+'U';iobEl.style.color=iobVal>3?'#f87171':iobVal>1.5?'#fbbf24':'#4ade80';}
+}
+
+/* device stats: omnipod + sensor */
+function renderDeviceStats(){
+  const POD_HOURS=72;       /* official life */
+  const POD_GRACE=8;        /* extra grace hours */
+  const SENSOR_DAYS=10;
+  const SENSOR_HOURS=SENSOR_DAYS*24;
+
+  function fmtRemain(msLeft){
+    if(msLeft<=0)return{val:'ΛΗΞΗ',sub:'άμεση αλλαγή!',color:'#ef4444',urgent:true};
+    const h=Math.floor(msLeft/3600000);
+    const m=Math.floor((msLeft%3600000)/60000);
+    if(h<1)return{val:m+'λ',sub:'αλλαγή τώρα!',color:'#ef4444',urgent:true};
+    if(h<6)return{val:h+'ω '+m+'λ',sub:'σύντομα',color:'#f87171',urgent:false};
+    if(h<12)return{val:h+'ω',sub:'προσεχώς',color:'#fbbf24',urgent:false};
+    const days=Math.floor(h/24),remH=h%24;
+    const valStr=days>0?days+'μ '+remH+'ω':h+'ω';
+    return{val:valStr,sub:'ok',color:'#2dd4bf',urgent:false};
+  }
+
+  /* ── SENSOR ── find latest Sensor Start */
+  const sensorStart=treats
+    .filter(t=>t.eventType==='Sensor Start'&&t.mills>0)
+    .sort((a,b)=>b.mills-a.mills)[0];
+
+  if(sensorStart){
+    const expiresMs=sensorStart.mills+SENSOR_HOURS*3600000;
+    const leftMs=expiresMs-Date.now();
+    const r=fmtRemain(leftMs);
+    const startStr=new Date(sensorStart.mills).toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'});
+    document.getElementById('sensor-remain').textContent=r.val;
+    document.getElementById('sensor-remain').style.color=r.color;
+    document.getElementById('sensor-sub').textContent='από '+startStr;
+    document.getElementById('sensor-card').style.borderColor=r.urgent?'rgba(239,68,68,.5)':'';
+  } else {
+    document.getElementById('sensor-remain').textContent='—';
+    document.getElementById('sensor-sub').textContent='δεν βρέθηκε';
+  }
+
+  /* ── POD ── find latest Site Change or Pump Battery */
+  const podStart=treats
+    .filter(t=>(t.eventType==='Site Change'||t.eventType==='Pump Battery Change'||t.eventType==='Insulin Change')&&t.mills>0)
+    .sort((a,b)=>b.mills-a.mills)[0];
+
+  if(podStart){
+    const officialExpires=podStart.mills+POD_HOURS*3600000;
+    const hardExpires=podStart.mills+(POD_HOURS+POD_GRACE)*3600000;
+    const leftMs=hardExpires-Date.now();
+    const leftOfficialMs=officialExpires-Date.now();
+    const r=fmtRemain(leftMs);
+    /* show official time if still within official window */
+    const displayLeft=leftOfficialMs>0?leftOfficialMs:leftMs;
+    const rd=fmtRemain(displayLeft);
+    const startStr=new Date(podStart.mills).toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'});
+    const startTimeStr=new Date(podStart.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+    // Build "21ω + 8ω" style display
+    const officialH=Math.max(0,Math.floor(leftOfficialMs/3600000));
+    const officialM=Math.max(0,Math.floor((leftOfficialMs%3600000)/60000));
+    const graceH=Math.floor(POD_GRACE);
+    let podDisplay;
+    if(leftOfficialMs>0){
+      const officialDays=Math.floor(officialH/24),officialRem=officialH%24;
+      const offStr=officialDays>0?officialDays+'μ '+officialRem+'ω':officialH+'ω '+officialM+'λ';
+      podDisplay=offStr+' + '+graceH+'ω';
+    } else if(leftMs>0){
+      const graceLeft=Math.floor(leftMs/3600000);
+      const graceLeftM=Math.floor((leftMs%3600000)/60000);
+      podDisplay='(+grace) '+graceLeft+'ω '+graceLeftM+'λ';
+    } else {
+      podDisplay='ΛΗΞΗ';
+    }
+    document.getElementById('pod-remain').textContent=podDisplay;
+    document.getElementById('pod-remain').style.color=rd.color;
+    document.getElementById('pod-sub').textContent='από '+startStr+' '+startTimeStr;
+    document.getElementById('pod-card').style.borderColor=r.urgent?'rgba(239,68,68,.5)':'';
+  } else {
+    document.getElementById('pod-remain').textContent='—';
+    document.getElementById('pod-sub').textContent='δεν βρέθηκε';
+  }
+}
+
+/* stats */
+function renderStats(){
+  const raw=ents.filter(e=>e.date>=Date.now()-86400000);
+  const vs=raw.map(e=>Number(e.sgv)).filter(v=>Number.isFinite(v)&&v>0);
+  if(!vs.length)return;
+  const avg=Math.round(vs.reduce((a,b)=>a+b,0)/vs.length);
+  const mx=Math.max(...vs),mn=Math.min(...vs);
+  const sd=Math.round(Math.sqrt(vs.reduce((a,v)=>a+(v-avg)**2,0)/vs.length));
+  const nLo=vs.filter(v=>v<LOW).length,nOk=vs.filter(v=>v>=LOW&&v<=HIGH).length,nHi=vs.filter(v=>v>HIGH).length;
+  const pLo=Math.round(nLo/vs.length*100),pOk=Math.round(nOk/vs.length*100),pHi=Math.round(nHi/vs.length*100);
+  const a1c=((avg+46.7)/28.7).toFixed(1);
+  const tirCol=pOk>=70?'#4ade80':pOk>=50?'#fbbf24':'#f87171';
+  const circ=289,off=circ-(pOk/100*circ);
+  document.getElementById('tarc').setAttribute('stroke-dashoffset',off);
+  document.getElementById('tarc').setAttribute('stroke',tirCol);
+  document.getElementById('tirn').textContent=pOk+'%';
+  document.getElementById('tirn').style.color=tirCol;
+  document.getElementById('tlo').textContent='↓ '+pLo+'%';
+  document.getElementById('tok').textContent='✓ '+pOk+'%';
+  document.getElementById('thi').textContent='↑ '+pHi+'%';
+  const a=parseFloat(a1c);
+  document.getElementById('a1c').textContent=a1c+'%';
+  document.getElementById('a1c').style.color=a<7?'#4ade80':a<8?'#fbbf24':'#f87171';
+  document.getElementById('sdv').textContent=sd;
+  document.getElementById('sdv').style.color=sd<40?'#4ade80':sd<60?'#fbbf24':'#f87171';
+  document.getElementById('bavg').textContent=avg;
+}
+
+/* load */
+async function loadData(){
+  try{
+    const tenDaysAgo=new Date(Date.now()-10*24*3600000).toISOString();
+    const [resE,resT,resD,resIOB,resPROF]=await Promise.all([
+      fetch(`${BASE}/api/v1/entries.json?count=576`),
+      fetch(`${BASE}/api/v1/treatments.json?count=400`),
+      fetch(`${BASE}/api/v1/treatments.json?count=20&find[eventType]=Sensor+Start`),
+      fetch(`${BASE}/api/v1/devicestatus.json?count=1`),
+      fetch(`${BASE}/api/v1/profile.json`),
+    ]);
+    if(!resE.ok)throw new Error('HTTP '+resE.status);
+    const data=await resE.json();
+    if(!data||!data.length)throw new Error('no data');
+    /* normalize mills from created_at if missing */
+    function normTreat(t){if(!t.mills&&t.created_at)t.mills=new Date(t.created_at).getTime();if(!t.mills&&t.timestamp)t.mills=new Date(t.timestamp).getTime();return t;}
+    /* treatments — non-fatal if fails */
+    if(resT.ok){
+      const td=await resT.json();
+      treats=Array.isArray(td)?td.map(normTreat).filter(t=>t.mills&&(t.insulin||t.carbs||t.duration||t.eventType)):[];
+    }
+    /* device events (sensor start, site change) — separate fetch, merge in */
+    if(resD&&resD.ok){
+      const dd=await resD.json();
+      if(Array.isArray(dd)){
+        const ids=new Set(treats.map(t=>t._id));
+        dd.map(normTreat).forEach(t=>{if(t.mills&&!ids.has(t._id))treats.push(t);});
+      }
+    }
+    /* Loop IOB from devicestatus */
+    let loopIob=null;
+    if(resIOB&&resIOB.ok){
+      try{
+        const ds=await resIOB.json();
+        if(ds&&ds[0]&&ds[0].loop&&ds[0].loop.iob!=null) loopIob=ds[0].loop.iob.iob;
+        else if(ds&&ds[0]&&ds[0].openaps&&ds[0].openaps.iob!=null) loopIob=ds[0].openaps.iob.iob;
+      }catch(e){}
+    }
+    /* Carb ratio from profile */
+    try{
+      if(resPROF&&resPROF.ok){
+        const prof=await resPROF.json();
+        const now=new Date();
+        const nowMins=now.getHours()*60+now.getMinutes();
+        /* profile can be array or single object */
+        const p=Array.isArray(prof)?prof[0]:prof;
+        const carbRatios=p?.store?.[p?.defaultProfile]?.carbratio
+          || p?.carbratio
+          || p?.store?.Default?.carbratio
+          || [];
+        if(carbRatios.length){
+          /* find active entry — entries have timeAsSeconds */
+          let active=carbRatios[0];
+          for(const cr of carbRatios){
+            const crMins=Math.floor((cr.timeAsSeconds||0)/60);
+            if(crMins<=nowMins) active=cr;
+          }
+          const ratio=parseFloat(active.value);
+          const el=document.getElementById('carb-ratio');
+          if(el&&ratio>0){
+            el.textContent=ratio+' g / U';
+            if(window._setCarbRatio) window._setCarbRatio(ratio);
+          }
+        }
+      }
+    }catch(e){}
+    const prevTs=ents.length?ents[0].date:null;
+    ents=data;
+    const lat=data[0],prv=data[1];
+    const v=Number(lat.sgv),col=gc(v),s=st(v);
+    document.getElementById('gval').textContent=v;
+    document.getElementById('gval').style.color=col;
+    document.getElementById('garr').textContent=arw(lat.direction);
+    document.getElementById('garr').style.color=col;
+    if(prv){
+      const d=v-Number(prv.sgv);
+      const dEl=document.getElementById('gdlt');
+      dEl.textContent=(d>0?'+':'')+d+' mg/dL';
+      dEl.style.animation='';
+      if(d<=-40){
+        dEl.style.color='#ef4444';
+        dEl.style.animation='pulse-b .7s infinite';
+      } else if(d<0){
+        dEl.style.color='#f87171';
+      } else if(d>0){
+        dEl.style.color='#4ade80';
+      } else {
+        dEl.style.color='#94a3b8';
+      }
+    }
+    const bdg=document.getElementById('gbdg');bdg.textContent=s.t;bdg.className='badge '+s.c;
+    const am=Math.round((Date.now()-lat.date)/60000);
+    document.getElementById('gage').textContent=am<=1?'μόλις τώρα':am+' λεπτά πριν';
+    document.getElementById('hdr-status').textContent=v+' mg/dL · '+s.t;
+    lastTs=lat.date;
+    /* υπολογισμός πραγματικού interval από τα τελευταία 6 readings */
+    if(data.length>=6){
+      const gaps=[];
+      for(let i=0;i<5;i++) gaps.push(data[i].date-data[i+1].date);
+      const avgGap=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length/1000);
+      window._cgmInterval=Math.max(240,Math.min(360,avgGap)); /* clamp 4-6min */
+    }
+    startCountdown();
+    if(lat.date!==prevTs){renderChart();renderStats();}
+    renderMealStats(loopIob);
+    renderDeviceStats();
+    document.getElementById('lupd').textContent=new Date().toLocaleTimeString('el-GR');
+  }catch(e){
+    console.error(e);
+    /* keep last known value visible, just flag the error */
+    const bdg=document.getElementById('gbdg');
+    bdg.textContent='ΣΦΑΛΜΑ';bdg.className='badge urg';
+    document.getElementById('gage').textContent='⚠ '+e.message;
+    document.getElementById('hdr-status').textContent='⚠ '+e.message;
+    /* don't overwrite gval so last reading stays visible */
+  }
+}
+
+loadData();
+setInterval(loadData,CGM*1000);
+</script>
+</body>
+</html>
