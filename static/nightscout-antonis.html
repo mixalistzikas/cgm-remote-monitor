@@ -97,6 +97,9 @@ header{
 .hdr-r{text-align:right}
 .pname{font-family:var(--display);font-size:17px;font-weight:800;color:var(--teal);letter-spacing:.06em}
 .clock{font-family:var(--mono);font-size:12px;color:var(--text-2);margin-top:2px;letter-spacing:.1em}
+.ns-link{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.08em;
+  text-decoration:none;margin-top:3px;display:block;transition:color .2s;}
+.ns-link:hover{color:var(--teal);}
 
 /* ── GLASS CARD BASE ── */
 .card{
@@ -169,6 +172,10 @@ header{
 .carb-input:focus{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-dim)}
 .carb-result{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--teal);letter-spacing:-.01em}
 .carb-ratio-lbl{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
+.basal-wrap{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07)}
+.basal-lbl{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:3px}
+.basal-val{font-family:var(--mono);font-size:18px;font-weight:500;color:#38bdf8;letter-spacing:-.01em}
+.basal-sub{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:2px}
 .carb-ratio-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--amber);letter-spacing:-.01em}
 
 /* COUNTDOWN */
@@ -241,7 +248,7 @@ header{
   font-family:var(--display);font-weight:600;letter-spacing:.12em;margin-top:3px;
 }
 .tirbkd{display:flex;justify-content:space-between;width:100%;
-  font-family:var(--mono);font-size:11px;margin-top:6px;}
+  font-family:var(--mono);font-size:15px;font-weight:500;margin-top:8px;}
 .t-lo{color:var(--red)}.t-ok{color:var(--green)}.t-hi{color:var(--amber)}
 
 /* ── BOTTOM ── */
@@ -292,6 +299,91 @@ header{
   content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
   background:linear-gradient(90deg,transparent,var(--teal-glow),transparent);
 }
+
+/* ══════════════════════════════════════════
+   MOBILE  ≤ 768px
+══════════════════════════════════════════ */
+@media(max-width:768px){
+
+  html,body{overflow-y:auto;overflow-x:hidden}
+
+  #app{
+    height:auto;min-height:100vh;
+    grid-template-rows:auto auto auto;
+    padding:10px 12px 24px;
+    gap:10px;
+    width:100%;
+  }
+
+  /* HEADER — mobile: minimal, just clock + NS link */
+  header{padding-bottom:6px;}
+  .logo{display:none}
+  .hdr-center{display:none}
+  .hdr-r{display:flex;flex-direction:row;align-items:center;gap:12px;width:100%;justify-content:flex-end}
+  .pname{display:none}
+  .clock{font-size:12px;margin-top:0}
+  .ns-link{margin-top:0;display:inline}
+
+  /* MIDDLE — stack vertically, chart first */
+  .mid{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  /* Chart moves first via order */
+  .ccrd{order:1;min-height:260px;padding:12px 14px}
+  .vcard{order:2;padding:16px 14px;align-items:flex-start;text-align:left}
+  .spanel{order:3;flex-direction:row;flex-wrap:wrap;padding:10px;gap:8px}
+
+  /* VALUE CARD — horizontal layout on mobile */
+  .vcard{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    grid-template-rows:auto auto auto auto auto auto auto auto;
+    column-gap:16px;
+    align-items:start;
+  }
+  .lbl{grid-column:1/-1;margin-bottom:4px;font-size:9px}
+  .gval{font-size:clamp(52px,14vw,72px);grid-column:1;grid-row:2/5;align-self:center}
+  .gunit{grid-column:2;grid-row:2;font-size:10px;align-self:flex-end;padding-bottom:4px}
+  .arrow{grid-column:2;grid-row:3;font-size:clamp(20px,6vw,28px);margin-top:0}
+  .delta{grid-column:2;grid-row:4;font-size:clamp(15px,4vw,20px);margin-top:0}
+  .badge{grid-column:1/-1;grid-row:5;margin-top:6px;display:inline-flex;width:fit-content}
+  .gage{grid-column:1/-1;grid-row:6;margin-top:4px}
+  .carb-ratio-wrap{grid-column:1/-1;grid-row:7;margin-top:8px;padding-top:8px}
+  .carb-calc-wrap{grid-column:1/-1;grid-row:8;margin-top:8px;padding-top:8px}
+  .countdown-wrap{display:none} /* hidden on mobile — header pill shows current value */
+
+  /* STATS PANEL — 2 col grid */
+  .spanel{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0}
+  .scard{padding:10px 12px;align-items:flex-start;text-align:left}
+  .scard:first-child{grid-column:1/-1} /* TIR full width */
+  .tirwrap{width:90px;height:90px;margin:4px auto 6px}
+  .tirsvg{width:90px;height:90px}
+  .tirnum{font-size:22px}
+  .tirnum small{font-size:9px}
+  .tirbkd{font-size:13px;font-weight:500}
+  .slbl{font-size:10px;letter-spacing:.1em}
+  .sval{font-size:clamp(18px,5vw,26px)}
+  .ssub{font-size:10px}
+
+  /* BOTTOM CARDS — 2 col grid */
+  .bot{grid-template-columns:repeat(2,1fr);gap:8px}
+  .fcard{grid-column:1/-1}
+  .bcard{padding:10px 12px}
+  .blbl{font-size:10px;letter-spacing:.1em}
+  .bval{font-size:clamp(18px,5vw,26px)}
+  .bsub{font-size:10px}
+
+  /* CHART */
+  .cwrap{min-height:220px;height:220px}
+  #cld{height:220px}
+  .chdr{flex-wrap:wrap;gap:6px}
+  .cttl{font-size:10px}
+  .rbtns{gap:3px}
+  .rbtn{font-size:10px;padding:3px 9px}
+}
 </style>
 </head>
 <body>
@@ -311,6 +403,7 @@ header{
     <div class="hdr-r">
       <div class="pname">Αντώνης</div>
       <div class="clock" id="clk">--:--:--</div>
+      <a class="ns-link" href="https://nightscout-antonis-7b338979f9b1.herokuapp.com" target="_blank" rel="noopener">Nightscout ↗</a>
     </div>
   </header>
 
@@ -335,6 +428,11 @@ header{
           <input class="carb-input" id="carb-input" type="number" min="0" max="300" placeholder="g" />
           <div class="carb-result" id="carb-result">— U</div>
         </div>
+      </div>
+      <div class="basal-wrap">
+        <div class="basal-lbl">Βασικός ρυθμός</div>
+        <div class="basal-val" id="basal-val">--- U/ω</div>
+        <div class="basal-sub" id="basal-sub">---</div>
       </div>
       <div class="countdown-wrap">
         <div class="countdown-lbl">Επόμενη μέτρηση</div>
@@ -435,7 +533,7 @@ header{
 const BASE='https://nightscout-antonis-7b338979f9b1.herokuapp.com';
 const LOW=70,HIGH=180,UL=55,UH=250,CGM=300;
 let ents=[],treats=[],mc=null,hrs=6,lastTs=null,cdTimer=null;
-window._cgmInterval=330;
+window._cgmInterval=360;
 
 const gc=v=>v<=UL||v>=UH?'#f87171':v<LOW||v>HIGH?'#fbbf24':'#4ade80';
 const arw=d=>({DoubleUp:'⬆⬆',SingleUp:'⬆',FortyFiveUp:'↗',Flat:'→',FortyFiveDown:'↘',SingleDown:'⬇',DoubleDown:'⬇⬇'}[d])||'→';
@@ -547,8 +645,9 @@ function updateChartData(){
   mc.data.datasets[0].data=vs;
   mc.data.datasets[0].pointBackgroundColor=vs.map(gc);
   mc.data.datasets[0].pointBorderColor='transparent';
-  mc.options.scales.y.min=Math.max(30,Math.min(...vs)-20);
-  mc.options.scales.y.max=Math.min(420,Math.max(...vs)+30);
+
+  mc.options.scales.y.min=Math.min(40,Math.min(...vs)-10);
+  mc.options.scales.y.max=Math.max(250,Math.max(...vs)+10);
   mc.options.animation=false;
   mc.update('none');
   mc.options.animation={duration:400};
@@ -574,6 +673,7 @@ let currentTw=[];
 let currentDates=[];
 let currentVs=[];
 
+
 function renderChart(){
   const now=Date.now();
   const windowEnd=now-panOffsetMs;
@@ -597,19 +697,20 @@ function renderChart(){
   };
 
   /* custom tooltip state */
-  let activeTreat=null;
+  let activeGroup=[];
 
   mc=new Chart(cv,{
     type:'line',
     data:{labels:lbs,datasets:[{
       data:currentVs,
-      borderColor:'rgba(45,212,191,0.8)',
+      borderColor:'transparent',
       backgroundColor:(ctx)=>getGrad(ctx.chart.ctx),
       pointBackgroundColor:currentVs.map(gc),
       pointBorderColor:'transparent',
       pointRadius:currentVs.length>80?0:3,
       pointHoverRadius:5,
-      borderWidth:1.8,tension:0.4,fill:true
+      borderWidth:1.8,tension:0.4,fill:true,
+      yAxisID:'y'
     }]},
     options:{
       responsive:true,maintainAspectRatio:false,animation:{duration:400},
@@ -620,13 +721,14 @@ function renderChart(){
           borderColor:'rgba(45,212,191,.2)',borderWidth:1,
           titleColor:'#94a3b8',bodyColor:'#2dd4bf',
           padding:10,cornerRadius:8,
-          callbacks:{label:c=>`${c.raw} mg/dL`}
+          callbacks:{label:c=>c.raw+' mg/dL'},
+          filter:()=>activeGroup.length===0
         }
       },
       scales:{
         x:{ticks:{color:'rgba(148,163,184,.4)',font:{size:10,family:'DM Mono'},maxTicksLimit:8,maxRotation:0},
            grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.07)'}},
-        y:{min:Math.max(30,Math.min(...currentVs)-20),max:Math.min(420,Math.max(...currentVs)+30),
+        y:{min:Math.min(40,Math.min(...currentVs)-10),max:Math.max(250,Math.max(...currentVs)+10),
            ticks:{color:'rgba(148,163,184,.4)',font:{size:10,family:'DM Mono'}},
            grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.07)'}}
       },
@@ -634,13 +736,30 @@ function renderChart(){
         /* check if hover near a treatment marker */
         const ca=chart.chartArea;if(!ca)return;
         const x=e.x,y=e.y;
-        activeTreat=null;
+        activeGroup=[];
+        let anchor=null;
         for(const t of currentTw){
           if(!t._px)continue;
           const dx=Math.abs(x-t._px),dy=Math.abs(y-t._py);
-          if(dx<14&&dy<14){activeTreat=t;break;}
+          if(dx<14&&dy<14){anchor=t;break;}
         }
-        chart.canvas.style.cursor=activeTreat?'pointer':'default';
+        if(anchor){
+          /* collect all treatments within ±5min of anchor */
+          const CLUSTER=3*60000;
+          const group=currentTw.filter(t=>t._px!=null&&Math.abs(t.mills-anchor.mills)<=CLUSTER);
+          /* expand: if group has a meal bolus, also grab its carb entry partner (±10min) */
+          const hasMeal=group.some(t=>t._isMeal&&t.eventType!=='Carb Correction');
+          if(hasMeal){
+            const MEAL_WINDOW=10*60000;
+            const extra=currentTw.filter(t=>t._px!=null&&t.eventType==='Carb Correction'
+              &&!group.includes(t)&&Math.abs(t.mills-anchor.mills)<=MEAL_WINDOW);
+            activeGroup=[...group,...extra];
+          } else {
+            activeGroup=group;
+          }
+        }
+        chart.canvas.style.cursor=activeGroup.length?'pointer':'default';
+
       }
     },
     plugins:[
@@ -697,6 +816,33 @@ function renderChart(){
         ctx.restore();
       }},
       /* zone bands */
+      {id:'segments',afterDraw(ch){
+        /* draw line in zone colors: green in range, amber out, red >250 or <40 */
+        const{ctx,chartArea:{left,right,top,bottom},scales:{x,y}}=ch;
+        if(!x||!y||currentVs.length<2)return;
+        ctx.save();
+        ctx.lineWidth=2;
+        ctx.lineJoin='round';
+        ctx.lineCap='round';
+        function segColor(v){
+          if(v>=250||v<=40) return 'rgba(248,113,113,0.9)';
+          if(v<70||v>180)   return 'rgba(251,191,36,0.9)';
+          return 'rgba(45,212,191,0.85)';
+        }
+        for(let i=0;i<currentVs.length-1;i++){
+          const v0=currentVs[i],v1=currentVs[i+1];
+          const x0=x.getPixelForValue(i),x1=x.getPixelForValue(i+1);
+          const y0=y.getPixelForValue(v0),y1=y.getPixelForValue(v1);
+          if(x0<left||x1>right)continue;
+          /* use color of the higher-risk point */
+          const vMax=Math.max(v0,v1),vMin=Math.min(v0,v1);
+          const col=vMax>=250||vMin<=40?'rgba(248,113,113,0.9)':
+                    vMax>180||vMin<70?'rgba(251,191,36,0.9)':'rgba(45,212,191,0.85)';
+          ctx.strokeStyle=col;
+          ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+        }
+        ctx.restore();
+      }},
       {id:'zones',beforeDraw(ch){
         const{ctx,chartArea:{left,right,top,bottom},scales:{y}}=ch;
         if(!y)return;
@@ -751,12 +897,15 @@ function renderChart(){
           const{px,py}=pos;
 
           const et=t.eventType||'';
-          const isMeal = et==='Carb Correction'; /* carb entries = meals */
-          const isCorrection = et==='Correction Bolus'&&t.insulin>0;
-          const isCarb = false; /* no separate carb type needed */
+          /* Carb Correction = meal marker (carbs, no dot needed) */
+          const isCarbEntry = et==='Carb Correction';
+          /* Correction Bolus manual (automatic:false) = meal bolus */
+          const isMealBolus = et==='Correction Bolus'&&t.insulin>0&&t.automatic===false;
+          /* Correction Bolus automatic = auto correction */
+          const isAutoCorrection = et==='Correction Bolus'&&t.insulin>0&&t.automatic===true;
 
-          if(isCorrection||isCarb){
-            /* red dot for corrections */
+          if(isAutoCorrection){
+            /* red dot — αυτόματη διόρθωση */
             ctx.beginPath();
             ctx.arc(px,py,11,0,Math.PI*2);
             ctx.fillStyle='rgba(8,12,20,.6)';
@@ -768,13 +917,14 @@ function renderChart(){
             ctx.arc(px,py,5.5,0,Math.PI*2);
             ctx.fillStyle='#fca5a5';
             ctx.fill();
-            const dose=fmtDose(t.insulin)||fmtDose(t.carbs);
+            const dose=fmtDose(t.insulin);
             if(dose){
               ctx.fillStyle='#fca5a5';
               ctx.fillText(dose+'U',px,py-16);
             }
-          } else if(isMeal){
-            /* dose above dot, purple dot, food icon BELOW */
+
+          } else if(isMealBolus){
+            /* purple dot — γεύμα */
             const dose=fmtDose(t.insulin);
             if(dose){
               ctx.font='600 10px "DM Mono",monospace';
@@ -796,23 +946,101 @@ function renderChart(){
             ctx.textBaseline='top';
             ctx.fillText('🍽',px,py+13);
             ctx.textBaseline='bottom';
+
+          } else if(isCarbEntry){
+            /* carb entry — μόνο εικονίδιο χωρίς dot */
+            ctx.font='12px serif';
+            ctx.textBaseline='middle';
+            ctx.fillText('🍽',px,py);
+            ctx.textBaseline='bottom';
             ctx.font='600 10px "DM Mono",monospace';
           }
 
           t._px=px;t._py=py;
-          t._isMeal=isMeal;t._isCorrection=isCorrection||isCarb;
+          t._isMeal=isMealBolus||isCarbEntry;
+          t._isCorrection=isAutoCorrection;
+          t._label=isMealBolus?'γεύμα':isAutoCorrection?'διόρθωση':isCarbEntry?'υδατάνθρακες':'';
         }
 
         /* hover tooltip */
-        if(activeTreat&&activeTreat._px!=null){
-          const t=activeTreat;
-          const ptx=t._px,pty=t._py;
-          const timeStr=new Date(t.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
-          const typeLabel=t.eventType||'Δόση';
-          const insulinStr=t.insulin!=null?fmtDose(t.insulin)+' U':null;
-          const carbsStr=t.carbs!=null&&t.carbs>0?t.carbs+' g carbs':null;
-          const lines=[typeLabel,insulinStr,carbsStr,timeStr].filter(Boolean);
-          const accentColor=t._isMeal?'#a78bfa':'#f87171';
+        if(activeGroup.length){
+          const anchor=activeGroup[0];
+          const ptx=anchor._px,pty=anchor._py;
+          const lines=[];
+          const lineColors=[];
+          let accentColor='#94a3b8';
+
+          /* sort: meals first, auto corrections last */
+          const sorted=[...activeGroup].sort((a,b)=>{
+            const rank=t=>t._isMeal?0:t._isCorrection?1:2;
+            return rank(a)-rank(b);
+          });
+
+          /* meals & carbs — merge into one block */
+          const meals=sorted.filter(t=>t._isMeal&&!t._isCorrection);
+          const corrections=sorted.filter(t=>t._isCorrection);
+          const carbsOnly=sorted.filter(t=>t.eventType==='Carb Correction');
+
+          if(meals.length||carbsOnly.length){
+            accentColor='#a78bfa';
+            lines.push('γεύμα'); lineColors.push('#a78bfa');
+            /* find glucose value closest to meal time */
+            const mealTs=(meals[0]||carbsOnly[0]).mills;
+            let closestSgv=null,minDiff=Infinity;
+            for(let i=0;i<currentDates.length;i++){
+              const diff=Math.abs(currentDates[i]-mealTs);
+              if(diff<minDiff){minDiff=diff;closestSgv=currentVs[i];}
+            }
+            if(closestSgv!=null){
+              const sgvCol=closestSgv<=55||closestSgv>=250?'#f87171':closestSgv<70||closestSgv>180?'#fbbf24':'#4ade80';
+              lines.push('🩸 '+closestSgv+' mg/dL'); lineColors.push(sgvCol);
+            }
+            meals.forEach(t=>{
+              if(t.insulin>0){lines.push(fmtDose(t.insulin)+' U ινσουλίνη');lineColors.push('#f1f5f9');}
+            });
+            carbsOnly.forEach(t=>{
+              if(t.carbs>0){lines.push(t.carbs+' g υδατ/κες');lineColors.push('#f1f5f9');}
+            });
+          }
+
+          /* corrections — each one separately */
+          if(corrections.length){
+            if(accentColor==='#94a3b8') accentColor='#f87171';
+            if(corrections.length===1){
+              lines.push('διόρθωση'); lineColors.push('#f87171');
+              /* glucose at correction time */
+              const corrTs=corrections[0].mills;
+              let corrSgv=null,corrDiff=Infinity;
+              for(let i=0;i<currentDates.length;i++){
+                const diff=Math.abs(currentDates[i]-corrTs);
+                if(diff<corrDiff){corrDiff=diff;corrSgv=currentVs[i];}
+              }
+              if(corrSgv!=null){
+                const sgvCol=corrSgv<=55||corrSgv>=250?'#f87171':corrSgv<70||corrSgv>180?'#fbbf24':'#4ade80';
+                lines.push('🩸 '+corrSgv+' mg/dL'); lineColors.push(sgvCol);
+              }
+              if(corrections[0].insulin>0){lines.push(fmtDose(corrections[0].insulin)+' U ινσουλίνη');lineColors.push('#f1f5f9');}
+            } else {
+              lines.push('διορθώσεις'); lineColors.push('#f87171');
+              corrections.forEach(t=>{
+                const tStr=new Date(t.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+                /* glucose at this correction time */
+                let cSgv=null,cDiff=Infinity;
+                for(let i=0;i<currentDates.length;i++){
+                  const diff=Math.abs(currentDates[i]-t.mills);
+                  if(diff<cDiff){cDiff=diff;cSgv=currentVs[i];}
+                }
+                const sgvPart=cSgv!=null?' · 🩸'+cSgv:'';
+                lines.push(tStr+sgvPart+' · '+fmtDose(t.insulin)+' U');
+                lineColors.push('#fca5a5');
+              });
+            }
+          }
+
+          /* timestamp — use earliest */
+          const earliest=sorted.reduce((a,b)=>a.mills<b.mills?a:b);
+          const timeStr=new Date(earliest.mills).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+          if(corrections.length<=1){lines.push(timeStr);lineColors.push('#64748b');}
 
           ctx.font='500 11px "DM Mono",monospace';
           ctx.textAlign='left';ctx.textBaseline='alphabetic';
@@ -827,7 +1055,7 @@ function renderChart(){
           ctx.strokeStyle=accentColor+'cc';ctx.lineWidth=1;
           ctx.beginPath();ctx.roundRect(bx,by,bw,bh,6);ctx.fill();ctx.stroke();
           lines.forEach((l,i)=>{
-            ctx.fillStyle=i===0?accentColor:i===lines.length-1?'#64748b':'#f1f5f9';
+            ctx.fillStyle=lineColors[i]||'#f1f5f9';
             ctx.fillText(l,bx+pad2,by+pad2+lh*i+lh*.78);
           });
         }
@@ -878,6 +1106,45 @@ function renderChart(){
     ]
   });
   attachPanOnce(cv);
+}
+
+/* basal rate */
+function renderBasal(){
+  const el=document.getElementById('basal-val');
+  const sub=document.getElementById('basal-sub');
+  if(!el)return;
+  const now=Date.now();
+
+  /* Loop sends a new Temp Basal every 5min — look back up to 10min */
+  const recent=treats
+    .filter(t=>t.eventType==='Temp Basal'&&t.mills>0)
+    .sort((a,b)=>b.mills-a.mills);
+
+  /* prefer entry started within last 15min */
+  const last=recent.find(t=>(now-t.mills)<=15*60000);
+  const entry=last||recent[0];
+
+  if(entry){
+    const rate=entry.rate!=null?entry.rate:(entry.absolute!=null?entry.absolute:0);
+    /* if rate=0 and entry is old, try scheduled basal from profile */
+    const ageMin=Math.round((now-entry.mills)/60000);
+    if(rate===0&&ageMin>10&&window._scheduledBasal!=null){
+      el.textContent=parseFloat(window._scheduledBasal.toFixed(3))+' U/ω';
+      el.style.color='#38bdf8';
+      sub.textContent='scheduled (profile)';
+    } else {
+      el.textContent=parseFloat(rate.toFixed(3))+' U/ω';
+      el.style.color=rate===0?'var(--text-3)':rate>0.3?'#fbbf24':'#38bdf8';
+      sub.textContent=(entry.automatic?'αυτόματο':'manual')+' · '+ageMin+'λ πριν';
+    }
+  } else if(window._scheduledBasal!=null){
+    el.textContent=parseFloat(window._scheduledBasal.toFixed(3))+' U/ω';
+    el.style.color='#38bdf8';
+    sub.textContent='scheduled (profile)';
+  } else {
+    el.textContent='— U/ω';
+    sub.textContent='';
+  }
 }
 
 /* meal & IOB stats */
@@ -1099,6 +1366,18 @@ async function loadData(){
             el.textContent=ratio+' g / U';
             if(window._setCarbRatio) window._setCarbRatio(ratio);
           }
+          /* store scheduled basal for current time */
+          try{
+            const basals=p?.store?.[p?.defaultProfile]?.basal
+              ||p?.basal
+              ||p?.store?.Default?.basal||[];
+            if(basals.length){
+              const nowMins2=new Date().getHours()*60+new Date().getMinutes();
+              let ab=basals[0];
+              for(const b of basals){const bm=Math.floor((b.timeAsSeconds||0)/60);if(bm<=nowMins2)ab=b;}
+              window._scheduledBasal=parseFloat(ab.value);
+            }
+          }catch(e){}
         }
       }
     }catch(e){}
@@ -1136,11 +1415,12 @@ async function loadData(){
       const gaps=[];
       for(let i=0;i<5;i++) gaps.push(data[i].date-data[i+1].date);
       const avgGap=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length/1000);
-      window._cgmInterval=Math.max(240,Math.min(360,avgGap)); /* clamp 4-6min */
+      window._cgmInterval=Math.max(270,Math.min(390,avgGap+30)); /* clamp, +30s buffer */
     }
     startCountdown();
     if(lat.date!==prevTs){renderChart();renderStats();}
     renderMealStats(loopIob);
+    renderBasal();
     renderDeviceStats();
     document.getElementById('lupd').textContent=new Date().toLocaleTimeString('el-GR');
   }catch(e){
